@@ -3,7 +3,7 @@
 ## Overview
 This project demonstrates a Security Operations Center (SOC) detection lab built using **Wazuh SIEM** to monitor a Windows endpoint. The lab focuses on collecting, analyzing, and correlating Windows security events to detect authentication anomalies and suspicious process execution behavior commonly associated with real-world attacks.
 
-The goal of this project is to showcase hands-on SOC skills, including endpoint onboarding, log analysis, event correlation, and detection engineering.
+The goal of this project is to demonstrate hands-on SOC analyst workflows, including endpoint onboarding, Windows security telemetry analysis, incident correlation, and threat investigation using SIEM tooling.
 
 ---
 
@@ -50,9 +50,25 @@ The behavior was determined to be **benign lab activity**, but the detection log
 
 ---
 
+## Screenshots
+
+Agent successfully connected to Wazuh:
+![Agent Active](screenshots/01-agent-active.png)
+
+Failed login attempts detected:
+![Failed Logins](screenshots/02-failed-logins-4625.png)
+
+Successful login event:
+![Successful Login](screenshots/03-successful-login-4624.png)
+
+PowerShell execution detected:
+![PowerShell Execution](screenshots/04-powershell-execution-4688.png)
+
+---
+
 ## MITRE ATT&CK Mapping
-- **T1110 – Brute Force**
-- **T1059.001 – PowerShell**
+- **T1110 – Brute Force** (Authentication attempts)
+- **T1059.001 – PowerShell** (Command execution)
 
 ---
 
