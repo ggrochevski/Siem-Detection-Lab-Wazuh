@@ -1,91 +1,140 @@
-# SIEM Detection & SOC Monitoring Lab (Wazuh)
+# SIEM Detection Lab — Wazuh
+
+![Wazuh](https://img.shields.io/badge/Wazuh-005571?style=flat&logo=elasticsearch&logoColor=white)
+![OpenSearch](https://img.shields.io/badge/OpenSearch-005EB8?style=flat&logo=opensearch&logoColor=white)
+![Windows](https://img.shields.io/badge/Windows%2011-0078D6?style=flat&logo=windows&logoColor=white)
+![PowerShell](https://img.shields.io/badge/PowerShell-5391FE?style=flat&logo=powershell&logoColor=white)
+![MITRE ATT&CK](https://img.shields.io/badge/MITRE%20ATT%26CK-CC0000?style=flat&logoColor=white)
 
 ## Overview
-This project demonstrates a Security Operations Center (SOC) detection lab built using **Wazuh SIEM** to monitor a Windows endpoint. The lab focuses on collecting, analyzing, and correlating Windows security events to detect authentication anomalies and suspicious process execution behavior commonly associated with real-world attacks.
 
-The goal of this project is to demonstrate hands-on SOC analyst workflows, including endpoint onboarding, Windows security telemetry analysis, incident correlation, and threat investigation using SIEM tooling.
+This lab deploys a functional SIEM environment using **Wazuh** to monitor a Windows 11 endpoint, detect authentication anomalies, and correlate suspicious process execution behavior. The project focuses on the core analyst workflow: onboarding an endpoint, ingesting telemetry, correlating events, and mapping findings to MITRE ATT&CK.
 
----
-
-## Lab Architecture
-- **SIEM Platform:** Wazuh (All-in-One deployment)
-- **Endpoint:** Windows 11
-- **Log Source:** Windows Security Event Log
-- **Collection Method:** Wazuh Agent
-- **Analysis Tool:** OpenSearch Dashboards (Discover)
-- **Networking:** Host-only network for SIEM communication, NAT for internet access
+**Key outcomes:**
+- Windows 11 endpoint onboarded and actively monitored via Wazuh Agent
+- Detected failed login attempts (brute-force pattern) followed by successful authentication
+- Correlated PowerShell execution post-authentication with MITRE T1059.001
+- Investigated using OpenSearch Dashboards with parent-child process analysis
 
 ---
 
-## Data Sources & Telemetry
-The following Windows Security Event IDs were collected and analyzed:
+## Architecture
 
-| Event ID | Description |
-|--------|-------------|
-| 4625 | Failed logon attempt |
-| 4624 | Successful logon |
-| 4688 | Process creation |
+```mermaid
+flowchart LR
+    subgraph Endpoint
+        Win11["Windows 11\nWIN-ENDPOINT-01"]
+        Agent["Wazuh Agent"]
+        EventLog["Windows Security\nEvent Log"]
+    end
 
-Advanced Windows Audit Policies were enabled to ensure high-fidelity security telemetry.
+    subgraph SIEM Platform
+        Wazuh["Wazuh Manager\nAll-in-One Deployment"]
+        OpenSearch["OpenSearch\nDashboards"]
+    end
 
----
+    EventLog --> Agent
+    Agent -->|"Secure Channel\nHost-Only Network"| Wazuh
+    Wazuh --> OpenSearch
+```
 
-## Detection Use Case
-### Suspicious Authentication Followed by PowerShell Execution
-
-**Scenario:**  
-Multiple failed login attempts were observed on a Windows endpoint, followed by a successful authentication and subsequent PowerShell execution. This behavior mirrors common attacker workflows involving credential guessing and post-authentication reconnaissance.
-
-**Detection Logic (Conceptual):**
-- Repeated failed logins (4625) within a short time window
-- A successful login (4624) on the same host and user
-- PowerShell process creation (4688) shortly after authentication
+**Network:** Host-only adapter for agent-to-manager communication; NAT for internet access.
 
 ---
 
-## Analysis & Investigation
-Events were analyzed using OpenSearch Dashboards to correlate authentication activity with process execution. Process parent-child relationships, user context, and privilege level were reviewed to assess the nature of the activity.
+## Data Sources
 
-The behavior was determined to be **benign lab activity**, but the detection logic reflects real-world SOC investigation workflows.
+| Event ID | Description | Why It Matters |
+|---|---|---|
+| 4625 | Failed logon attempt | Detects brute-force / credential guessing |
+| 4624 | Successful logon | Establishes authentication baseline |
+| 4688 | Process creation | Detects post-auth execution (e.g., PowerShell) |
+
+Advanced Audit Policy was enabled on the Windows endpoint to ensure high-fidelity security telemetry for all three event categories.
+
+---
+
+## Detection Scenario
+
+**Scenario:** Suspicious Authentication Followed by PowerShell Execution
+
+This use case mirrors a common attacker workflow: credential guessing → successful login → post-authentication reconnaissance or lateral movement.
+
+**Detection logic:**
+
+```
+1. Multiple 4625 events (failed logons) within a short time window
+        ↓
+2. Single 4624 event (successful logon) on same host/user
+        ↓
+3. 4688 event (PowerShell process creation) shortly after authentication
+        ↓
+4. Review parent process, command-line args, and user context
+```
+
+**MITRE ATT&CK Mapping:**
+
+| Technique | ID | Observed Behavior |
+|---|---|---|
+| Brute Force | T1110 | Repeated failed logon attempts |
+| PowerShell | T1059.001 | PowerShell spawned post-authentication |
 
 ---
 
 ## Screenshots
 
-Agent successfully connected to Wazuh:
+**Agent connected and active in Wazuh:**
+
 ![Agent Active](screenshots/01-agent-active.png)
 
-Failed login attempts detected:
+**Failed login attempts detected (Event ID 4625):**
+
 ![Failed Logins](screenshots/02-failed-logins-4625.png)
 
-Successful login event:
+**Successful logon event (Event ID 4624):**
+
 ![Successful Login](screenshots/03-successful-login-4624.png)
 
-PowerShell execution detected:
+**PowerShell execution detected (Event ID 4688):**
+
 ![PowerShell Execution](screenshots/04-powershell-execution-4688.png)
 
 ---
 
-## MITRE ATT&CK Mapping
-- **T1110 – Brute Force** (Authentication attempts)
-- **T1059.001 – PowerShell** (Command execution)
+## Investigation Notes
+
+Events were analyzed in OpenSearch Dashboards (Discover view). Process parent-child relationships, the user context, and privilege level were reviewed to determine the nature of the activity.
+
+**Outcome:** Behavior confirmed as benign lab activity. Detection logic and investigation workflow reflect real-world SOC triage procedures.
 
 ---
 
-## Key Takeaways
-- Built and configured a functional SIEM lab environment
-- Onboarded and monitored a Windows endpoint using agent-based telemetry
-- Correlated authentication and execution events to detect suspicious behavior
-- Applied SOC-style investigation techniques and MITRE ATT&CK mapping
+## Key Concepts Demonstrated
+
+| Area | What Was Built |
+|---|---|
+| SIEM Deployment | Wazuh All-in-One on Linux, agent-based endpoint monitoring |
+| Endpoint Telemetry | Advanced Audit Policy, Windows Security Event Log |
+| Threat Detection | Multi-event correlation across authentication and execution |
+| MITRE ATT&CK | Mapped observed behavior to T1110 and T1059.001 |
+| SIEM Investigation | OpenSearch Dashboards, process tree analysis, user context review |
 
 ---
 
-## Future Improvements
-- Enable full command-line logging for enhanced execution visibility
-- Create custom Wazuh detection rules based on observed behavior
-- Add additional endpoint detection scenarios
+## Tools & Technologies
+
+`Wazuh SIEM` `OpenSearch Dashboards` `Windows 11` `Windows Security Event Log` `Advanced Audit Policy` `PowerShell` `MITRE ATT&CK` `VirtualBox` `Linux`
 
 ---
 
-## Disclaimer
-This project was conducted in a controlled lab environment for educational purposes. No malicious activity was performed.
+## Repository Structure
+
+```
+Siem-Detection-Lab-Wazuh/
+├── docs/               # Lab notes and investigation documentation
+├── queries/            # OpenSearch/Wazuh query references
+├── screenshots/        # Evidence screenshots from the lab
+└── README.md
+```
+
+---
